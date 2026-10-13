@@ -92,7 +92,16 @@ body {
 		</style>
 		<link id="-gd-engine-icon" rel="icon" type="image/png" href="index.icon.png" />
 <link rel="apple-touch-icon" href="index.apple-touch-icon.png"/>
-
+<style>html, #canvas { touch-action: none; }</style>
+<script>
+// 第 60 便: iPhone の Safari は「拡大禁止」の指定を無視し、2 本指の動きをページの拡大に横取りする（ゲームのピンチが効かなかった）。拡大の合図を止める
+(function () {
+  var stop = function (e) { e.preventDefault(); };
+  ["gesturestart", "gesturechange", "gestureend"].forEach(function (t) { document.addEventListener(t, stop, { passive: false }); });
+  document.addEventListener("touchmove", function (e) { if (e.touches.length > 1) e.preventDefault(); }, { passive: false });
+  document.addEventListener("dblclick", stop, { passive: false });
+})();
+</script>
 	</head>
 	<body>
 		<canvas id="canvas">
