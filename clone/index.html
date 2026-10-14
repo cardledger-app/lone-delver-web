@@ -99,17 +99,29 @@ body {
 // gesture の倍率（scale）と真ん中を window.__ldg に残し、ゲーム（main.gd の _web_gesture）が毎フレーム読んで寄る
 (function () {
   var stop = function (e) { e.preventDefault(); };
-  window.__ldg = { on: 0, s: 1, x: 0, y: 0, w: 1, h: 1 };
+  // c: 指が取り消された・gesture が動いた時刻（その直後に離した指をタップにしない）。tx・ty: 2 本の指の真ん中（gesture の知らせが位置を持たない時に使う）
+  window.__ldg = { on: 0, s: 1, x: 0, y: 0, w: 1, h: 1, c: 0, tx: -1, ty: -1 };
   var gs = function (e) {
     e.preventDefault();
     var g = window.__ldg;
     g.on = e.type === "gestureend" ? 0 : 1;
     g.s = e.scale || 1;
-    g.x = (e.clientX === undefined ? innerWidth / 2 : e.clientX);
-    g.y = (e.clientY === undefined ? innerHeight / 2 : e.clientY);
+    g.x = e.clientX !== undefined ? e.clientX : (g.tx >= 0 ? g.tx : innerWidth / 2);
+    g.y = e.clientY !== undefined ? e.clientY : (g.ty >= 0 ? g.ty : innerHeight / 2);
     g.w = innerWidth;
     g.h = innerHeight;
+    g.c = Date.now();
   };
+  var tm = function (e) {
+    var g = window.__ldg, t = e.touches;
+    if (t.length >= 2) { g.tx = (t[0].clientX + t[1].clientX) / 2; g.ty = (t[0].clientY + t[1].clientY) / 2; }
+    else { g.on = 0; g.tx = -1; g.ty = -1; }
+  };
+  ["touchstart", "touchmove", "touchend"].forEach(function (t) { document.addEventListener(t, tm, { passive: true, capture: true }); });
+  document.addEventListener("touchcancel", function () { window.__ldg.on = 0; window.__ldg.c = Date.now(); }, { capture: true });
+  var off = function () { window.__ldg.on = 0; };
+  window.addEventListener("blur", off);
+  document.addEventListener("visibilitychange", off);
   ["gesturestart", "gesturechange", "gestureend"].forEach(function (t) { document.addEventListener(t, gs, { passive: false }); });
   document.addEventListener("touchmove", function (e) { if (e.touches.length > 1) e.preventDefault(); }, { passive: false });
   document.addEventListener("dblclick", stop, { passive: false });
@@ -133,7 +145,7 @@ body {
 
 		<script src="index.js"></script>
 		<script>
-const GODOT_CONFIG = {"args":[],"canvasResizePolicy":2,"emscriptenPoolSize":8,"ensureCrossOriginIsolationHeaders":false,"executable":"index","experimentalVK":true,"fileSizes":{"index.pck":9309816,"index.wasm":39514754},"focusCanvas":true,"gdextensionLibs":[],"godotPoolSize":4};
+const GODOT_CONFIG = {"args":[],"canvasResizePolicy":2,"emscriptenPoolSize":8,"ensureCrossOriginIsolationHeaders":false,"executable":"index","experimentalVK":true,"fileSizes":{"index.pck":9310456,"index.wasm":39514754},"focusCanvas":true,"gdextensionLibs":[],"godotPoolSize":4};
 const GODOT_THREADS_ENABLED = false;
 const engine = new Engine(GODOT_CONFIG);
 
